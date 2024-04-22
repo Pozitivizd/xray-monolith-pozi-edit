@@ -87,7 +87,7 @@ public:
 	SBullet();
 	~SBullet();
 
-	bool CanBeRenderedNow() const { return (Device.dwFrame > init_frame_num); }
+	bool CanBeRenderedNow() const { return (Device.dwFrame > init_frame_num && life_time > 0.02f); } //PoziEdit: life_time check, so tracers are not visible at the beginning of they lifetime
 
 	void Init(const Fvector& position,
 	          const Fvector& direction,
