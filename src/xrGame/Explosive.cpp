@@ -399,7 +399,14 @@ void CExplosive::Explode()
 		cartridge.param_s.kAP = 1.f;
 		cartridge.param_s.fWallmarkSize = fWallmarkSize;
 		cartridge.bullet_material_idx = GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME);
-		cartridge.m_flags.set(CCartridge::cfTracer,FALSE);
+		if (i % 4 == 0) //PoziEdit start: only every fourth fragment is visible
+		{
+			cartridge.m_flags.set(CCartridge::cfTracer, TRUE); //PoziEdit - FALSE to TRUE making fragment tracers visible
+		}
+		else
+		{
+			cartridge.m_flags.set(CCartridge::cfTracer, FALSE);
+		} //PoziEdit end
 
 		Level().BulletManager().AddBullet(pos, frag_dir, m_fFragmentSpeed,
 		                                  m_fFragHit, m_fFragHitImpulse, Initiator(),
