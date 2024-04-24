@@ -242,9 +242,9 @@ float CHelmet::HitThroughArmor(float hit_power, s16 element, float ap, bool& add
 			return NewHitPower;
 
 		float protectLeftover = clampr<float>(protect - ap, 0.0f, 999.9f);
-		protectLeftover += (protect - protectLeftover) * 0.25f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
+		protectLeftover += (protect - protectLeftover) * 0.2f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
 
-		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 2.0f); //PoziEdit - ...
+		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 3.0f); //PoziEdit - ...
 	}
 	else
 	{
@@ -257,7 +257,7 @@ float CHelmet::HitThroughArmor(float hit_power, s16 element, float ap, bool& add
 		{
 			one = 1.0f;
 		}
-		NewHitPower /= 1.0f + (protect / one) * 2.0f;	//PoziEdit - for example:
+		NewHitPower /= 1.0f + (protect / one) * 3.0f;	//PoziEdit - for example:
 		//armor with 0.05 chem protection will reduce damage from chem anomaly for 50%	
 		//0.1chem protection - for 75%, 0.025chem protection - for 33%
 

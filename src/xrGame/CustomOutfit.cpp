@@ -220,9 +220,9 @@ float CCustomOutfit::HitThroughArmor(float hit_power, s16 element, float ap, boo
 			return NewHitPower;
 
 		float protectLeftover = clampr<float>(protect - ap, 0.0f, 999.9f);
-		protectLeftover += (protect - protectLeftover) * 0.25f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
+		protectLeftover += (protect - protectLeftover) * 0.2f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
 
-		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 2.0f); //PoziEdit - ...
+		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 3.0f); //PoziEdit - ...
 	}
 	else
 	{
