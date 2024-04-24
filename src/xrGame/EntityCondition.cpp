@@ -347,6 +347,7 @@ void CEntityCondition::UpdateCondition()
 float CEntityCondition::HitOutfitEffect(float hit_power, ALife::EHitType hit_type, s16 element, float ap,
                                         bool& add_wound)
 {
+	/* PoziEdit start - commented original function body
 	CInventoryOwner* pInvOwner = smart_cast<CInventoryOwner*>(m_object);
 	if (!pInvOwner)
 		return hit_power;
@@ -365,6 +366,29 @@ float CEntityCondition::HitOutfitEffect(float hit_power, ALife::EHitType hit_typ
 
 	if (bDebug)
 		Msg("new_hit_power = %.3f  hit_type = %s  ap = %.3f", new_hit_power, ALife::g_cafHitType2String(hit_type), ap);
+
+	return new_hit_power;
+
+	CInventoryOwner* pInvOwner = smart_cast<CInventoryOwner*>(m_object);
+	*/
+	//PoziEdit end
+	CActor* pActor = smart_cast<CActor*>(m_object);
+	CInventoryOwner* pInvOwner = smart_cast<CInventoryOwner*>(m_object);
+
+	if (!pActor) //PoziEdit - if not player, then leave function
+		return hit_power;
+
+	CCustomOutfit* pOutfit = (CCustomOutfit*)pInvOwner->inventory().ItemFromSlot(OUTFIT_SLOT);
+	CHelmet* pHelmet = (CHelmet*)pInvOwner->inventory().ItemFromSlot(HELMET_SLOT);
+	if (!pOutfit && !pHelmet)
+		return hit_power;
+
+	float new_hit_power = hit_power;
+	if (pOutfit)
+		new_hit_power = pOutfit->HitThroughArmor(new_hit_power, element, ap, add_wound, hit_type);
+
+	if (pHelmet)
+		new_hit_power = pHelmet->HitThroughArmor(new_hit_power, element, ap, add_wound, hit_type);
 
 	return new_hit_power;
 }

@@ -159,23 +159,23 @@ bool CHelmet::install_upgrade_impl(LPCSTR section, bool test)
 	bool result = inherited::install_upgrade_impl(section, test);
 
 	result |= process_if_exists(section, "burn_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeBurn], test);
+		m_HitTypeProtection[ALife::eHitTypeBurn], test);
 	result |= process_if_exists(section, "shock_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeShock], test);
+		m_HitTypeProtection[ALife::eHitTypeShock], test);
 	result |= process_if_exists(section, "strike_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeStrike], test);
+		m_HitTypeProtection[ALife::eHitTypeStrike], test);
 	result |= process_if_exists(section, "wound_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeWound], test);
+		m_HitTypeProtection[ALife::eHitTypeWound], test);
 	result |= process_if_exists(section, "radiation_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeRadiation], test);
+		m_HitTypeProtection[ALife::eHitTypeRadiation], test);
 	result |= process_if_exists(section, "telepatic_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeTelepatic], test);
+		m_HitTypeProtection[ALife::eHitTypeTelepatic], test);
 	result |= process_if_exists(section, "chemical_burn_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeChemicalBurn], test);
+		m_HitTypeProtection[ALife::eHitTypeChemicalBurn], test);
 	result |= process_if_exists(section, "explosion_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeExplosion], test);
+		m_HitTypeProtection[ALife::eHitTypeExplosion], test);
 	result |= process_if_exists(section, "fire_wound_protection", &CInifile::r_float,
-	                            m_HitTypeProtection[ALife::eHitTypeFireWound], test);
+		m_HitTypeProtection[ALife::eHitTypeFireWound], test);
 
 	LPCSTR str;
 	bool result2 = process_if_exists_set(section, "nightvision_sect", &CInifile::r_string, str, test);
@@ -195,7 +195,7 @@ bool CHelmet::install_upgrade_impl(LPCSTR section, bool test)
 	clamp(m_fPowerLoss, 0.0f, 1.0f);
 
 	result |= process_if_exists(section, "nearest_enemies_show_dist", &CInifile::r_float, m_fShowNearestEnemiesDistance,
-	                            test);
+		test);
 
 	result2 = process_if_exists_set(section, "bones_koeff_protection", &CInifile::r_string, str, test);
 	if (result2 && !test)
@@ -234,34 +234,17 @@ float CHelmet::HitThroughArmor(float hit_power, s16 element, float ap, bool& add
 		Msg("CHelmet::HitThroughArmor hit_type=%d | unmodified hit_power=%f", (u32)hit_type, hit_power);
 
 	float NewHitPower = hit_power;
+
+	const float protect = GetDefHitTypeProtection(hit_type);
 	if (hit_type == ALife::eHitTypeFireWound)
 	{
-		float ba = GetBoneArmor(element);
-		if (ba <= 0.0f)
+		if (protect <= 0.0f)
 			return NewHitPower;
 
-		float BoneArmor = ba * GetCondition();
-		if (ap <= BoneArmor)
-		{
-			//пуля НЕ пробила бронь
-			NewHitPower *= m_boneProtection->m_fHitFracActor;
-			//add_wound = false; 	//раны нет
-			if (strstr(Core.Params, "-dbgbullet"))
-				Msg("CHelmet::HitThroughArmor AP(%f) <= bone_armor(%f) [HitFracActor=%f] modified hit_power=%f", ap,
-				    BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
-		}
+		float protectLeftover = clampr<float>(protect - ap, 0.0f, 999.9f);
+		protectLeftover += (protect - protectLeftover) * 0.25f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
 
-		else
-		{
-			float d_hit_power = (ap - BoneArmor) / (ap * m_boneProtection->APScale);
-			clamp(d_hit_power, m_boneProtection->m_fHitFracActor, 1.0f);
-
-			NewHitPower *= d_hit_power;
-		}
-
-		if (strstr(Core.Params, "-dbgbullet"))
-			Msg("CHelmet::HitThroughArmor AP(%f) > bone_armor(%f) [HitFracActor=%f] modified hit_power=%f", ap,
-			    BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
+		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 2.0f); //PoziEdit - ...
 	}
 	else
 	{
@@ -269,20 +252,21 @@ float CHelmet::HitThroughArmor(float hit_power, s16 element, float ap, bool& add
 		if (hit_type == ALife::eHitTypeStrike ||
 			hit_type == ALife::eHitTypeWound ||
 			hit_type == ALife::eHitTypeWound_2 ||
-			hit_type == ALife::eHitTypeExplosion)
+			hit_type == ALife::eHitTypeExplosion ||
+			hit_type == ALife::eHitTypeShock)
 		{
 			one = 1.0f;
 		}
-		float protect = GetDefHitTypeProtection(hit_type);
-		NewHitPower -= protect * one;
+		NewHitPower /= 1.0f + (protect / one) * 2.0f;	//PoziEdit - for example:
+		//armor with 0.05 chem protection will reduce damage from chem anomaly for 50%	
+		//0.1chem protection - for 75%, 0.025chem protection - for 33%
 
-		if (NewHitPower < 0.f)
-			NewHitPower = 0.f;
 
 		if (strstr(Core.Params, "-dbgbullet"))
-			Msg("CHelmet::HitThroughArmor hit_type=%d | After HitTypeProtection(%f) hit_power=%f", (u32)hit_type,
-			    protect * one, NewHitPower);
+			Msg("CCustomOutfit::HitThroughArmor hit_type=%d | After HitTypeProtection(%f) hit_power=%f", (u32)hit_type,
+				protect * one, NewHitPower);
 	}
+	//PoziEdit end
 
 	if (strstr(Core.Params, "-dbgbullet"))
 		Msg("CHelmet::HitThroughArmor hit_type=%d | After HitFractionActor hit_power=%f", (u32)hit_type, NewHitPower);

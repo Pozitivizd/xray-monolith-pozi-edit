@@ -79,7 +79,8 @@ void CCustomOutfit::Load(LPCSTR section)
 	m_HitTypeProtection[ALife::eHitTypeTelepatic] = pSettings->r_float(section, "telepatic_protection");
 	m_HitTypeProtection[ALife::eHitTypeChemicalBurn] = pSettings->r_float(section, "chemical_burn_protection");
 	m_HitTypeProtection[ALife::eHitTypeExplosion] = pSettings->r_float(section, "explosion_protection");
-	m_HitTypeProtection[ALife::eHitTypeFireWound] = 0.f; //pSettings->r_float(section,"fire_wound_protection");
+	//m_HitTypeProtection[ALife::eHitTypeFireWound] = 0.f; //pSettings->r_float(section,"fire_wound_protection"); //PoziEdit - commented
+	m_HitTypeProtection[ALife::eHitTypeFireWound] = pSettings->r_float(section, "fire_wound_protection"); //PoziEdit
 	//	m_HitTypeProtection[ALife::eHitTypePhysicStrike]= pSettings->r_float(section,"physic_strike_protection");
 	m_HitTypeProtection[ALife::eHitTypeLightBurn] = m_HitTypeProtection[ALife::eHitTypeBurn];
 	m_boneProtection->m_fHitFracActor = pSettings->r_float(section, "hit_fraction_actor");
@@ -160,6 +161,8 @@ float CCustomOutfit::HitThroughArmor(float hit_power, s16 element, float ap, boo
 		Msg("CCustomOutfit::HitThroughArmor hit_type=%d | unmodified hit_power=%f", (u32)hit_type, hit_power);
 
 	float NewHitPower = hit_power;
+
+	/* PoziEdit start - commented original code
 	if (hit_type == ALife::eHitTypeFireWound)
 	{
 		float ba = GetBoneArmor(element);
@@ -175,7 +178,7 @@ float CCustomOutfit::HitThroughArmor(float hit_power, s16 element, float ap, boo
 
 			if (strstr(Core.Params, "-dbgbullet"))
 				Msg("CCustomOutfit::HitThroughArmor AP(%f) <= bone_armor(%f) [HitFracActor=%f] modified hit_power=%f",
-				    ap, BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
+					ap, BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
 		}
 
 		else
@@ -187,7 +190,7 @@ float CCustomOutfit::HitThroughArmor(float hit_power, s16 element, float ap, boo
 
 			if (strstr(Core.Params, "-dbgbullet"))
 				Msg("CCustomOutfit::HitThroughArmor AP(%f) > bone_armor(%f) [HitFracActor=%f] modified hit_power=%f",
-				    ap, BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
+					ap, BoneArmor, m_boneProtection->m_fHitFracActor, NewHitPower);
 		}
 	}
 	else
@@ -208,8 +211,40 @@ float CCustomOutfit::HitThroughArmor(float hit_power, s16 element, float ap, boo
 
 		if (strstr(Core.Params, "-dbgbullet"))
 			Msg("CCustomOutfit::HitThroughArmor hit_type=%d | After HitTypeProtection(%f) hit_power=%f", (u32)hit_type,
-			    protect * one, NewHitPower);
+				protect * one, NewHitPower);
+	}*/
+	const float protect = GetDefHitTypeProtection(hit_type);
+	if (hit_type == ALife::eHitTypeFireWound)
+	{
+		if (protect <= 0.0f)
+			return NewHitPower;
+
+		float protectLeftover = clampr<float>(protect - ap, 0.0f, 999.9f);
+		protectLeftover += (protect - protectLeftover) * 0.25f; //PoziEdit - armor always slightly reduces the damage from a bullet, even if it is penetrated
+
+		NewHitPower /= pow(1.0f + protectLeftover * 2.0f, 2.0f); //PoziEdit - ...
 	}
+	else
+	{
+		float one = 0.1f;
+		if (hit_type == ALife::eHitTypeStrike ||
+			hit_type == ALife::eHitTypeWound ||
+			hit_type == ALife::eHitTypeWound_2 ||
+			hit_type == ALife::eHitTypeExplosion ||
+			hit_type == ALife::eHitTypeShock)
+		{
+			one = 1.0f;
+		}
+		NewHitPower /= 1.0f + (protect / one) * 2.0f;	//PoziEdit - for example:
+		//armor with 0.05 chem protection will reduce damage from chem anomaly for 50%	
+		//0.1chem protection - for 75%, 0.025chem protection - for 33%
+
+
+		if (strstr(Core.Params, "-dbgbullet"))
+			Msg("CCustomOutfit::HitThroughArmor hit_type=%d | After HitTypeProtection(%f) hit_power=%f", (u32)hit_type,
+				protect * one, NewHitPower);
+	}
+	//PoziEdit end
 	//увеличить изношенность костюма
 	Hit(hit_power, hit_type);
 
